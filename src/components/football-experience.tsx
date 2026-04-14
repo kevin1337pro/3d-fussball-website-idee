@@ -1,11 +1,21 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clubSegments } from "@/data/club-segments";
+import { clubSegments, getSegmentHref } from "@/data/club-segments";
 import { FootballScene } from "@/components/football-scene";
 
 export function FootballExperience() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const router = useRouter();
+
+  function handleSelectSegment(segmentIndex: number) {
+    setActiveIndex(segmentIndex);
+
+    const targetSegment = clubSegments[segmentIndex];
+    router.push(getSegmentHref(targetSegment));
+  }
 
   useEffect(() => {
     const sections = Array.from(
@@ -54,7 +64,11 @@ export function FootballExperience() {
     >
       <div className="relative mb-16">
         <div className="mx-auto max-w-5xl rounded-[2.75rem] border border-white/8 bg-black/8 px-2 py-6 backdrop-blur-sm sm:px-6">
-          <FootballScene activeIndex={activeIndex} priorityView />
+          <FootballScene
+            activeIndex={activeIndex}
+            onSelectSegment={handleSelectSegment}
+            priorityView
+          />
         </div>
         <div className="glass-panel mx-auto mt-4 max-w-2xl rounded-[1.5rem] p-6 text-center">
           <div className="flex items-center justify-between gap-4">
@@ -108,13 +122,13 @@ export function FootballExperience() {
                   </p>
                 </div>
 
-                <a
-                  href={`#${segment.slug}`}
+                <Link
+                  href={getSegmentHref(segment)}
                   className="inline-flex shrink-0 items-center gap-3 rounded-full border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
                 >
                   {segment.cta}
                   <span aria-hidden="true">{"->"}</span>
-                </a>
+                </Link>
               </div>
 
               <div className="mt-8 grid gap-4">

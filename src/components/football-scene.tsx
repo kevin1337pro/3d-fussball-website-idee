@@ -1,32 +1,50 @@
 "use client";
 
 import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
-import { Float, Sparkles } from "@react-three/drei";
-import { MathUtils, type Group } from "three";
-import { useRef } from "react";
+import { Billboard, Float, Sparkles, Text } from "@react-three/drei";
+import {
+  Euler,
+  MathUtils,
+  Quaternion,
+  Vector3,
+  type Group
+} from "three";
+import { useRef, useState } from "react";
 import { clubSegments } from "@/data/club-segments";
 import { footballFaces } from "@/lib/truncated-icosahedron";
 
 type FootballSceneProps = {
   activeIndex: number;
+  onSelectSegment?: (segmentIndex: number) => void;
   priorityView?: boolean;
 };
 
-const interactiveFaceIndexes = [2, 7, 12, 18, 23, 29];
+const pentagonSegmentMap = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5];
+const frontVector = new Vector3(0, 0, 1);
+
+const pentagonSnapRotations = footballFaces.slice(0, 12).map((face) => {
+  const faceCenter = new Vector3(...face.center).normalize();
+  const quaternion = new Quaternion().setFromUnitVectors(faceCenter, frontVector);
+  const euler = new Euler().setFromQuaternion(quaternion, "XYZ");
+
+  return [euler.x, euler.y, euler.z] as const;
+});
 
 type PointerCaptureTarget = EventTarget & {
   setPointerCapture: (pointerId: number) => void;
   releasePointerCapture: (pointerId: number) => void;
 };
 
-function SceneBall({ activeIndex }: FootballSceneProps) {
+function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
   const group = useRef<Group>(null);
-  const dragRotation = useRef({ x: 0, y: 0 });
+  const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+  const dragRotation = useRef({ x: 0, y: 0, z: 0 });
   const dragState = useRef({
     isDragging: false,
     pointerId: -1,
     lastX: 0,
-    lastY: 0
+    lastY: 0,
+    totalMovement: 0
   });
 
   function handlePointerDown(event: ThreeEvent<PointerEvent>) {
@@ -37,7 +55,8 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
       isDragging: true,
       pointerId: event.pointerId,
       lastX: event.clientX,
-      lastY: event.clientY
+      lastY: event.clientY,
+      totalMovement: 0
     };
     captureTarget?.setPointerCapture(event.pointerId);
   }
@@ -54,6 +73,7 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
     dragRotation.current.x += deltaY * 0.012;
     dragState.current.lastX = event.clientX;
     dragState.current.lastY = event.clientY;
+    dragState.current.totalMovement += Math.abs(deltaX) + Math.abs(deltaY);
   }
 
   function handlePointerUp(event: ThreeEvent<PointerEvent>) {
@@ -65,6 +85,24 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
     dragState.current.isDragging = false;
     dragState.current.pointerId = -1;
     captureTarget?.releasePointerCapture(event.pointerId);
+  }
+
+  function handleFaceClick(event: ThreeEvent<MouseEvent>, faceIndex: number, segmentIndex: number) {
+    event.stopPropagation();
+
+    if (dragState.current.totalMovement > 10) {
+      return;
+    }
+
+    const [baseX, baseY, baseZ] = clubSegments[segmentIndex]?.targetRotation ?? [0, 0, 0];
+    const [snapX, snapY, snapZ] = pentagonSnapRotations[faceIndex] ?? [baseX, baseY, baseZ];
+
+    dragRotation.current = {
+      x: snapX - baseX,
+      y: snapY - baseY,
+      z: snapZ - baseZ
+    };
+    onSelectSegment?.(segmentIndex);
   }
 
   useFrame((_, delta) => {
@@ -86,7 +124,12 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
       4,
       delta
     );
-    group.current.rotation.z = MathUtils.damp(group.current.rotation.z, targetZ, 4, delta);
+    group.current.rotation.z = MathUtils.damp(
+      group.current.rotation.z,
+      targetZ + dragRotation.current.z,
+      4,
+      delta
+    );
   });
 
   return (
@@ -97,7 +140,7 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      <Float speed={2} rotationIntensity={0.16} floatIntensity={0.38}>
+      <Float speed={2} rotationIntensity={0} floatIntensity={0.38}>
         <mesh visible={false}>
           <sphereGeometry args={[2.2, 32, 32]} />
           <meshBasicMaterial transparent opacity={0} />
@@ -120,20 +163,53 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
         </mesh>
 
         {footballFaces.map((face, faceIndex) => {
-          const interactiveIndex = interactiveFaceIndexes.indexOf(faceIndex);
-          const isActive = interactiveIndex === activeIndex;
-          const emissiveColor = isActive
-            ? clubSegments[activeIndex]?.accent
+          const segmentIndex =
+            face.kind === "pentagon" ? pentagonSegmentMap[faceIndex] ?? -1 : -1;
+          const isInteractive = segmentIndex >= 0;
+          const isActive = segmentIndex === activeIndex;
+          const isHovered = hoveredSegmentIndex === segmentIndex;
+          const accent = isInteractive ? clubSegments[segmentIndex]?.accent : "#000000";
+          const emissiveColor = isActive || isHovered
+            ? accent
             : face.kind === "pentagon"
               ? "#000000"
               : "#101613";
 
           return (
             <group key={`${face.kind}-${faceIndex}`}>
-              <mesh geometry={face.geometry} castShadow receiveShadow>
+              <mesh
+                geometry={face.geometry}
+                castShadow
+                receiveShadow
+                onClick={
+                  isInteractive
+                    ? (event) => handleFaceClick(event, faceIndex, segmentIndex)
+                    : undefined
+                }
+                onPointerOver={
+                  isInteractive
+                    ? (event) => {
+                        event.stopPropagation();
+                        setHoveredSegmentIndex(segmentIndex);
+                      }
+                    : undefined
+                }
+                onPointerOut={
+                  isInteractive
+                    ? (event) => {
+                        event.stopPropagation();
+                        setHoveredSegmentIndex((current) =>
+                          current === segmentIndex ? null : current
+                        );
+                      }
+                    : undefined
+                }
+              >
                 {face.kind === "pentagon" ? (
                   <meshPhysicalMaterial
                     color="#080808"
+                    emissive={emissiveColor}
+                    emissiveIntensity={isActive ? 0.24 : isHovered ? 0.14 : 0}
                     roughness={0.86}
                     metalness={0.01}
                     clearcoat={0.08}
@@ -157,6 +233,29 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
                   />
                 )}
               </mesh>
+
+              {isInteractive && face.kind === "pentagon" ? (
+                <Billboard
+                  position={[
+                    face.center[0] * 1.025,
+                    face.center[1] * 1.025,
+                    face.center[2] * 1.025
+                  ]}
+                  follow
+                >
+                  <Text
+                    color="#f3f7f4"
+                    fontSize={0.11}
+                    maxWidth={0.72}
+                    anchorX="center"
+                    anchorY="middle"
+                    outlineWidth={0.005}
+                    outlineColor="#000000"
+                  >
+                    {clubSegments[segmentIndex]?.title}
+                  </Text>
+                </Billboard>
+              ) : null}
             </group>
           );
         })}
@@ -172,6 +271,7 @@ function SceneBall({ activeIndex }: FootballSceneProps) {
 
 export function FootballScene({
   activeIndex,
+  onSelectSegment,
   priorityView = false
 }: FootballSceneProps) {
   return (
@@ -187,7 +287,7 @@ export function FootballScene({
         Central Match Core
       </div>
       <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/10 bg-black/18 px-4 py-2 text-center text-[10px] uppercase tracking-[0.32em] text-white/60 backdrop-blur">
-        Drag to rotate
+        Drag to rotate or click black panels
       </div>
       <Canvas camera={{ position: [0, 0.1, 6.7], fov: 34 }} dpr={[1, 1.75]}>
         <color attach="background" args={["#04100d"]} />
@@ -204,7 +304,10 @@ export function FootballScene({
           speed={0.35}
           color="#d8fff0"
         />
-        <SceneBall activeIndex={activeIndex} />
+        <SceneBall
+          activeIndex={activeIndex}
+          onSelectSegment={onSelectSegment}
+        />
       </Canvas>
     </div>
   );

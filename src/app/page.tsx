@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { FootballExperience } from "@/components/football-experience";
-import { clubSegments } from "@/data/club-segments";
+import { clubSegments, getSegmentHref } from "@/data/club-segments";
 
 const metrics = [
   { label: "Fuenfecke", value: "12" },
@@ -22,13 +23,13 @@ export default function HomePage() {
 
           <nav className="hidden items-center gap-3 lg:flex">
             {clubSegments.map((segment) => (
-              <a
+              <Link
                 key={segment.id}
-                href={`#${segment.slug}`}
+                href={getSegmentHref(segment)}
                 className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
               >
                 {segment.title}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
@@ -51,18 +52,18 @@ export default function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <a
+              <Link
                 href="#erlebnis"
                 className="inline-flex items-center justify-center rounded-full bg-[#7cff67] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#04100d] transition hover:brightness-105"
               >
                 Erlebnis ansehen
-              </a>
-              <a
-                href="#kontakt"
+              </Link>
+              <Link
+                href="/kontakt/"
                 className="inline-flex items-center justify-center rounded-full border border-white/12 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/80 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
               >
                 Kontaktbereich
-              </a>
+              </Link>
             </div>
           </div>
         </div>
