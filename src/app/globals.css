@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+:root {
+  --background: #03110d;
+  --background-deep: #020807;
+  --surface: rgba(8, 28, 23, 0.62);
+  --surface-strong: rgba(10, 36, 30, 0.86);
+  --border: rgba(151, 255, 195, 0.16);
+  --text: #eefcf5;
+  --muted: #a3c8b8;
+  --field: #7cff67;
+  --cyan: #57d4ff;
+  --gold: #f4d06f;
+  --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-heading: "Eurostile", "Microgramma", "Avenir Next Condensed", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-deep: var(--background-deep);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(87, 212, 255, 0.14), transparent 26%),
+    radial-gradient(circle at 20% 20%, rgba(124, 255, 103, 0.12), transparent 20%),
+    radial-gradient(circle at 80% 0%, rgba(244, 208, 111, 0.1), transparent 24%),
+    linear-gradient(180deg, #03110d 0%, #020807 100%);
+  color: var(--text);
+  font-family: var(--font-body), sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black, transparent 88%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(11, 36, 30, 0.86), rgba(7, 24, 20, 0.72));
+  border: 1px solid var(--border);
+  box-shadow:
+    0 18px 80px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.section-ring {
+  position: relative;
+}
+
+.section-ring::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(124, 255, 103, 0.6), rgba(87, 212, 255, 0.2), transparent 70%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-image:
+    radial-gradient(circle at 20% 20%, white 0, transparent 22%),
+    radial-gradient(circle at 80% 30%, white 0, transparent 18%),
+    radial-gradient(circle at 45% 75%, white 0, transparent 16%);
+  background-size: 14px 14px;
+  mix-blend-mode: soft-light;
+}
