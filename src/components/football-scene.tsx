@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
-import { Billboard, Float, Sparkles, Text } from "@react-three/drei";
+import { Float, Line, Sparkles } from "@react-three/drei";
 import {
   Euler,
   MathUtils,
@@ -10,11 +11,12 @@ import {
   type Group
 } from "three";
 import { useRef, useState } from "react";
-import { clubSegments } from "@/data/club-segments";
+import { clubSegments, getSegmentHref } from "@/data/club-segments";
 import { footballFaces } from "@/lib/truncated-icosahedron";
 
 type FootballSceneProps = {
   activeIndex: number;
+  onHoverSegment?: (segmentIndex: number | null) => void;
   onSelectSegment?: (segmentIndex: number) => void;
   priorityView?: boolean;
 };
@@ -35,7 +37,11 @@ type PointerCaptureTarget = EventTarget & {
   releasePointerCapture: (pointerId: number) => void;
 };
 
-function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
+function SceneBall({
+  activeIndex,
+  onHoverSegment,
+  onSelectSegment
+}: FootballSceneProps) {
   const group = useRef<Group>(null);
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
   const dragRotation = useRef({ x: 0, y: 0, z: 0 });
@@ -130,6 +136,7 @@ function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
       4,
       delta
     );
+
   });
 
   return (
@@ -191,6 +198,7 @@ function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
                     ? (event) => {
                         event.stopPropagation();
                         setHoveredSegmentIndex(segmentIndex);
+                        onHoverSegment?.(segmentIndex);
                       }
                     : undefined
                 }
@@ -201,6 +209,7 @@ function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
                         setHoveredSegmentIndex((current) =>
                           current === segmentIndex ? null : current
                         );
+                        onHoverSegment?.(null);
                       }
                     : undefined
                 }
@@ -209,7 +218,7 @@ function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
                   <meshPhysicalMaterial
                     color="#080808"
                     emissive={emissiveColor}
-                    emissiveIntensity={isActive ? 0.24 : isHovered ? 0.14 : 0}
+                    emissiveIntensity={isActive ? 0.36 : isHovered ? 0.22 : 0}
                     roughness={0.86}
                     metalness={0.01}
                     clearcoat={0.08}
@@ -235,26 +244,32 @@ function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
               </mesh>
 
               {isInteractive && face.kind === "pentagon" ? (
-                <Billboard
-                  position={[
-                    face.center[0] * 1.025,
-                    face.center[1] * 1.025,
-                    face.center[2] * 1.025
-                  ]}
-                  follow
-                >
-                  <Text
-                    color="#f3f7f4"
-                    fontSize={0.11}
-                    maxWidth={0.72}
-                    anchorX="center"
-                    anchorY="middle"
-                    outlineWidth={0.005}
-                    outlineColor="#000000"
-                  >
-                    {clubSegments[segmentIndex]?.title}
-                  </Text>
-                </Billboard>
+                <>
+                  {(isActive || isHovered) ? (
+                    <mesh
+                      geometry={face.geometry}
+                      position={[
+                        face.center[0] * 0.012,
+                        face.center[1] * 0.012,
+                        face.center[2] * 0.012
+                      ]}
+                    >
+                      <meshBasicMaterial
+                        color={accent}
+                        transparent
+                        opacity={isActive ? 0.18 : 0.1}
+                      />
+                    </mesh>
+                  ) : null}
+
+                  <Line
+                    points={[...face.outline, face.outline[0]]}
+                    color={accent}
+                    lineWidth={isActive ? 3.2 : isHovered ? 2.2 : 0.9}
+                    transparent
+                    opacity={isActive ? 1 : isHovered ? 0.88 : 0.22}
+                  />
+                </>
               ) : null}
             </group>
           );
@@ -271,9 +286,14 @@ function SceneBall({ activeIndex, onSelectSegment }: FootballSceneProps) {
 
 export function FootballScene({
   activeIndex,
+  onHoverSegment,
   onSelectSegment,
   priorityView = false
 }: FootballSceneProps) {
+  const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+  const displaySegment = clubSegments[hoveredSegmentIndex ?? activeIndex] ?? clubSegments[0];
+  const isHoverPreview = hoveredSegmentIndex !== null;
+
   return (
     <div
       className={`relative overflow-hidden ${
@@ -285,6 +305,74 @@ export function FootballScene({
       <div className="absolute inset-x-[8%] bottom-6 h-24 rounded-full bg-[radial-gradient(circle,_rgba(87,212,255,0.24),_transparent_72%)] blur-3xl" />
       <div className="absolute left-1/2 top-5 z-10 max-w-sm -translate-x-1/2 rounded-full border border-white/10 bg-black/18 px-4 py-2 text-center text-[11px] uppercase tracking-[0.34em] text-white/68 backdrop-blur">
         Central Match Core
+      </div>
+      <div
+        className={`glass-panel absolute right-5 top-5 z-10 hidden w-72 rounded-[1.5rem] p-5 text-left transition duration-300 lg:block ${
+          isHoverPreview
+            ? "translate-y-0 scale-[1.02] border-white/22 shadow-[0_24px_90px_rgba(0,0,0,0.42)]"
+            : "translate-y-0 scale-100 border-white/12"
+        }`}
+      >
+        <div
+          className="absolute inset-x-5 top-0 h-px"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${displaySegment.accent}, transparent)`
+          }}
+        />
+        <div
+          className={`absolute right-5 top-5 h-14 w-14 rounded-full blur-2xl transition duration-300 ${
+            isHoverPreview ? "opacity-90" : "opacity-50"
+          }`}
+          style={{ backgroundColor: displaySegment.accent }}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-white/50">
+            {isHoverPreview ? "Hover Preview" : "Active Tile"}
+          </p>
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2.5 w-2.5 rounded-full shadow-[0_0_14px_currentColor] transition duration-300 ${
+                isHoverPreview ? "scale-125" : "scale-100"
+              }`}
+              style={{ color: displaySegment.accent }}
+            />
+            <span className="text-[10px] uppercase tracking-[0.28em] text-white/50">
+              {isHoverPreview ? "Focused" : "Clickable"}
+            </span>
+          </div>
+        </div>
+
+        <p
+          className="mt-4 text-xs uppercase tracking-[0.28em] transition duration-300"
+          style={{ color: displaySegment.accent }}
+        >
+          {displaySegment.kicker}
+        </p>
+        <h3 className="mt-2 font-heading text-2xl uppercase text-white transition duration-300">
+          {displaySegment.title}
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-white/68 transition duration-300">
+          {displaySegment.description}
+        </p>
+
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-white/45">
+            {isHoverPreview
+              ? "Release to keep dragging or click to open."
+              : "Drag to rotate. Click for detail page."}
+          </p>
+          <Link
+            href={getSegmentHref(displaySegment)}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+              isHoverPreview
+                ? "border-white/25 bg-white/12 text-white"
+                : "border-white/12 bg-white/6 text-white/82 hover:border-white/25 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            {displaySegment.cta}
+            <span aria-hidden="true">{"->"}</span>
+          </Link>
+        </div>
       </div>
       <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/10 bg-black/18 px-4 py-2 text-center text-[10px] uppercase tracking-[0.32em] text-white/60 backdrop-blur">
         Drag to rotate or click black panels
@@ -306,6 +394,10 @@ export function FootballScene({
         />
         <SceneBall
           activeIndex={activeIndex}
+          onHoverSegment={(segmentIndex) => {
+            setHoveredSegmentIndex(segmentIndex);
+            onHoverSegment?.(segmentIndex);
+          }}
           onSelectSegment={onSelectSegment}
         />
       </Canvas>
