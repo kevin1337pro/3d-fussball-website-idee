@@ -68,6 +68,18 @@ button {
   font: inherit;
 }
 
+body.ball-cursor-enabled,
+body.ball-cursor-enabled a,
+body.ball-cursor-enabled button,
+body.ball-cursor-enabled canvas {
+  cursor: none;
+}
+
+.ball-cursor {
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
 .glass-panel {
   background: linear-gradient(180deg, rgba(11, 36, 30, 0.86), rgba(7, 24, 20, 0.72));
   border: 1px solid var(--border);
@@ -107,4 +119,132 @@ button {
     radial-gradient(circle at 45% 75%, white 0, transparent 16%);
   background-size: 14px 14px;
   mix-blend-mode: soft-light;
+}
+
+.lineup-player {
+  opacity: 0;
+  animation:
+    lineup-fade-in 720ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards,
+    lineup-float 3.6s ease-in-out infinite,
+    lineup-glow 2.8s ease-in-out infinite;
+  animation-delay:
+    var(--lineup-delay, 0ms),
+    calc(var(--lineup-delay, 0ms) + 120ms),
+    calc(var(--lineup-delay, 0ms) + 120ms);
+  transform-origin: center;
+}
+
+.lineup-player:nth-child(odd) {
+  animation-duration: 720ms, 4.2s, 3.2s;
+}
+
+.lineup-player:nth-child(even) {
+  animation-duration: 720ms, 3.7s, 2.9s;
+}
+
+.lineup-backdrop {
+  animation: lineup-backdrop-fade 280ms ease-out forwards;
+}
+
+.lineup-card {
+  transform-origin: top right;
+  animation: lineup-card-enter 420ms cubic-bezier(0.18, 0.84, 0.24, 1) forwards;
+}
+
+.lineup-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(87, 212, 255, 0.08), transparent 36%),
+    linear-gradient(315deg, rgba(255, 241, 18, 0.08), transparent 28%);
+  pointer-events: none;
+}
+
+.lineup-card::after {
+  content: "";
+  position: absolute;
+  inset: -28% auto auto -12%;
+  width: 52%;
+  height: 180%;
+  transform: rotate(18deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 35%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.02) 65%,
+    transparent 100%
+  );
+  filter: blur(2px);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: lineup-card-scan 5.4s linear infinite;
+}
+
+@keyframes lineup-fade-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 18px)) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes lineup-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+
+  50% {
+    transform: translate(-50%, calc(-50% - 12px)) scale(1.03);
+  }
+}
+
+@keyframes lineup-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.22));
+  }
+
+  50% {
+    filter: drop-shadow(0 12px 24px rgba(255, 255, 255, 0.1));
+  }
+}
+
+@keyframes lineup-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lineup-card-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(28px, -20px, 0) scale(0.9) rotate(-2deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes lineup-card-scan {
+  0% {
+    transform: translateX(-12%) rotate(18deg);
+  }
+
+  100% {
+    transform: translateX(190%) rotate(18deg);
+  }
 }

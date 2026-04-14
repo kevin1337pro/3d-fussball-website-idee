@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { TeamLineupShowcase } from "@/components/team-lineup-showcase";
 import {
   clubSegments,
   getSegmentBySlug,
@@ -151,6 +152,8 @@ export default async function SegmentPage({ params }: SegmentPageProps) {
           ))}
         </div>
       </section>
+
+      {segment.slug === "mannschaft" ? <TeamLineupShowcase /> : null}
 
       <section className="mx-auto mt-14 max-w-7xl px-6 pb-12 lg:px-10">
         <div className="glass-panel section-ring rounded-[2rem] p-8 md:p-10">

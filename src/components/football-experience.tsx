@@ -106,8 +106,8 @@ export function FootballExperience() {
               }`}
             >
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-2xl">
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start xl:gap-4">
+                <div className="min-w-0 max-w-2xl">
                   <p
                     className="text-xs uppercase tracking-[0.28em]"
                     style={{ color: segment.accent }}
@@ -117,16 +117,16 @@ export function FootballExperience() {
                   <h3 className="mt-3 font-heading text-3xl uppercase leading-tight text-white md:text-4xl">
                     {segment.title}
                   </h3>
-                  <p className="mt-4 max-w-2xl text-base leading-8 text-white/76 md:text-lg">
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-white/76 md:text-base md:leading-8">
                     {segment.description}
                   </p>
                 </div>
 
                 <Link
                   href={getSegmentHref(segment)}
-                  className="inline-flex shrink-0 items-center gap-3 rounded-full border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
+                  className="inline-flex w-fit max-w-full items-center gap-3 self-start rounded-full border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white/80 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
                 >
-                  {segment.cta}
+                  <span className="truncate">{segment.cta}</span>
                   <span aria-hidden="true">{"->"}</span>
                 </Link>
               </div>
